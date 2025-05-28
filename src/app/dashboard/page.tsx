@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
@@ -204,7 +205,7 @@ export default function DashboardPage() {
 
       <Card className="mb-6 shadow-lg bg-card/90 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="flex items-center text-2xl"><FilterIcon className="w-6 h-6 mr-2 text-accent"/>Test Controls</CardTitle>
+          <CardTitle className="flex items-center text-2xl"><FilterIcon className="w-6 h-6 mr-2 text-accent"/>Controle de Ensaio</CardTitle>
            <CardDescription>
             {selectedFilter ? `Controls for ${selectedFilter.name} monitoring.` : "Select a filter to enable controls."}
           </CardDescription>
@@ -289,3 +290,4 @@ export default function DashboardPage() {
     </div>
   );
 }
+

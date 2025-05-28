@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Zap, Thermometer, Sun, Droplets, Volume2, Play, StopCircle, Download, Activity, SlidersHorizontal, Filter as FilterIcon } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
+import { Zap, Thermometer, Sun, Droplets, Volume2, Play, StopCircle, Download, Activity, SlidersHorizontal, Filter as FilterIcon, DropletsIcon } from 'lucide-react';
+import type { Droplet, LucideIcon } from 'lucide-react';
 
 interface FilterOption {
   id: string;
@@ -17,11 +17,11 @@ interface FilterOption {
 }
 
 const filterOptions: FilterOption[] = [
-  { id: 'voltage', name: 'Voltage', icon: Zap, unit: 'V' },
-  { id: 'temperature', name: 'Temperature', icon: Thermometer, unit: '°C' },
-  { id: 'light', name: 'Light Intensity', icon: Sun, unit: 'lux' },
-  { id: 'humidity', name: 'Humidity', icon: Droplets, unit: '%' },
-  { id: 'sound', name: 'Sound Level', icon: Volume2, unit: 'dB' },
+  { id: 'index_One', name: 'Óleo Extremamente Limpo', icon: Droplets, unit: '%' },
+  { id: 'index_Two', name: 'Óleo Limpo', icon: Droplets, unit: '%' },
+  { id: 'index_Three', name: 'Óleo com Contaminação Moderada', icon: Droplets, unit: '%' },
+  { id: 'index_Four', name: 'Óleo Contaminado', icon: Droplets, unit: '%' },
+  { id: 'index_Five', name: 'Óleo Severamente Contaminado', icon: Droplets, unit: '%' },
 ];
 
 interface DataPoint {
@@ -46,11 +46,11 @@ export default function DashboardPage() {
     if (!selectedFilter) return 0;
     // Simple mock data generation based on filter type
     switch (selectedFilter.id) {
-      case 'voltage': return parseFloat((Math.random() * 12 + 1).toFixed(2)); // 1-13V
-      case 'temperature': return parseFloat((Math.random() * 30 + 10).toFixed(1)); // 10-40°C
-      case 'light': return Math.floor(Math.random() * 1000); // 0-1000 lux
-      case 'humidity': return parseFloat((Math.random() * 60 + 20).toFixed(1)); // 20-80%
-      case 'sound': return Math.floor(Math.random() * 80 + 30); // 30-110 dB
+      case 'index_One': return parseFloat((Math.random() * 12 + 1).toFixed(2)); // 1-13V
+      case 'index_Two': return parseFloat((Math.random() * 30 + 10).toFixed(1)); // 10-40°C
+      case 'index_Three': return Math.floor(Math.random() * 1000); // 0-1000 lux
+      case 'index_Four': return parseFloat((Math.random() * 60 + 20).toFixed(1)); // 20-80%
+      case 'index_Five': return Math.floor(Math.random() * 80 + 30); // 30-110 dB
       default: return parseFloat(Math.random().toFixed(2));
     }
   }, [selectedFilter]);
@@ -91,8 +91,8 @@ export default function DashboardPage() {
   const handleFilterSelect = (filter: FilterOption) => {
     if (isTestRunning) {
       toast({
-        title: "Test in Progress",
-        description: "Please stop the current test before changing filters.",
+        title: "Ensaio em Execussão",
+        description: "Por favor, pare o Ensaio Atual antes de mudar os Filtros.",
         variant: "destructive",
       });
       return;
@@ -101,16 +101,16 @@ export default function DashboardPage() {
     setLiveData([]); // Clear live data when filter changes
     setLoggedData([]); // Clear logged data when filter changes
     toast({
-      title: "Filter Selected",
-      description: `${filter.name} filter is now active.`,
+      title: "Ensaio Selecionado",
+      description: `${filter.name} esta é a filtragem do Ensaio Agora.`,
     });
   };
 
   const handleStartTest = () => {
     if (!selectedFilter) {
       toast({
-        title: "No Filter Selected",
-        description: "Please select a filter before starting the test.",
+        title: "Selecione Uma Ensaio",
+        description: "Por favor selecione uma filtragem para iniciar o Ensaio.",
         variant: "destructive",
       });
       return;
@@ -119,24 +119,24 @@ export default function DashboardPage() {
     setLiveData([]); // Clear previous live data
     setLoggedData([]); // Clear previous log
     toast({
-      title: "Test Started",
-      description: `Data streaming started for ${selectedFilter.name}.`,
+      title: "Ensaio Iniciado",
+      description: `Ensaio para ${selectedFilter.name} Iniciado.`,
     });
   };
 
   const handleStopTest = () => {
     setIsTestRunning(false);
     toast({
-      title: "Test Stopped",
-      description: "Data streaming stopped.",
+      title: "Ensaio Pausado",
+      description: "Ensaio Interrompido.",
     });
   };
 
   const handleDownloadCsv = () => {
     if (loggedData.length === 0) {
       toast({
-        title: "No Data Logged",
-        description: "There is no data to download. Run a test to log data.",
+        title: "Sem dados",
+        description: "Não existem dados coletados para o Relatorio.",
         variant: "destructive",
       });
       return;
@@ -176,15 +176,15 @@ export default function DashboardPage() {
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col">
       <header className="mb-8 text-center">
         <h1 className="text-4xl font-bold text-primary flex items-center justify-center">
-          <Activity className="w-10 h-10 mr-3" /> Arduino Data Dashboard
+          <Activity className="w-10 h-10 mr-3" /> Minas Teste Solução
         </h1>
-        <p className="text-foreground/80">Real-time monitoring and logging of Arduino sensor data.</p>
+        <p className="text-foreground/80">Monitoramento e Relatorio.</p>
       </header>
 
       <Card className="mb-6 shadow-lg bg-card/90 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="flex items-center text-2xl"><SlidersHorizontal className="w-6 h-6 mr-2 text-accent" />Filter Selection</CardTitle>
-          <CardDescription>Choose a data filter to start monitoring. Test controls will activate upon selection.</CardDescription>
+          <CardTitle className="flex items-center text-2xl"><SlidersHorizontal className="w-6 h-6 mr-2 text-accent" />Escolha uma Filtragem para Monitoramento</CardTitle>
+          <CardDescription>Escolha um grau de filtragem para monitormaneto do Ensaio.</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap justify-center gap-3">
           {filterOptions.map((filter) => (
@@ -217,7 +217,7 @@ export default function DashboardPage() {
             className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white disabled:bg-muted"
             aria-label="Start Test"
           >
-            <Play className="w-5 h-5 mr-2" /> Start Test
+            <Play className="w-5 h-5 mr-2" /> Inicar Ensaio 
           </Button>
           <Button
             onClick={handleStopTest}
@@ -227,7 +227,7 @@ export default function DashboardPage() {
             className="w-full sm:w-auto disabled:bg-muted"
             aria-label="Stop Test"
           >
-            <StopCircle className="w-5 h-5 mr-2" /> Stop Test
+            <StopCircle className="w-5 h-5 mr-2" /> Para Ensaio
           </Button>
           <Button
             onClick={handleDownloadCsv}
@@ -237,7 +237,7 @@ export default function DashboardPage() {
             className="w-full sm:w-auto border-accent text-accent-foreground hover:bg-accent/20 disabled:opacity-50 disabled:border-muted disabled:text-muted-foreground"
             aria-label="Download Log as CSV"
           >
-            <Download className="w-5 h-5 mr-2" /> Download Report
+            <Download className="w-5 h-5 mr-2" /> Gerar Relatório
           </Button>
         </CardContent>
       </Card>
@@ -246,11 +246,12 @@ export default function DashboardPage() {
         <CardHeader>
           <CardTitle className="flex items-center text-2xl">
             <Activity className="w-6 h-6 mr-2 text-accent" />
-            Live Data Stream {selectedFilter ? `(${selectedFilter.name})` : ''}
+            Ensaio {isTestRunning ? 'Em Progresso' : 'Finalizado'}
+            {selectedFilter ? `(${selectedFilter.name})` : ''}
           </CardTitle>
           <CardDescription>
-            {isTestRunning ? `Displaying latest readings for ${selectedFilter?.name}. Updates every second.` : "Start a test to see live data."}
-            {!selectedFilter && !isTestRunning && " Select a filter and start a test."}
+            {isTestRunning ? `Exibindo as últimas leituras para ${selectedFilter?.name}. Atualizações a cada  5 segundos.` : "Inicie um Ensaio para ver os Dados."}
+            {!selectedFilter && !isTestRunning && " Selecione um Ensaio"}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -277,13 +278,13 @@ export default function DashboardPage() {
             </div>
           ) : (
             <p className="text-center text-foreground/70 py-8">
-              {isTestRunning ? "Waiting for data..." : "No data to display. Start a test to see live readings."}
+              {isTestRunning ? "Aguardando Dados..." : "Nenhum dado para exibir. Inicie um ensaio para ver as leituras."}
             </p>
           )}
         </CardContent>
       </Card>
        <footer className="mt-12 text-center text-foreground/70 text-sm">
-        <p>&copy; {new Date().getFullYear()} Arduino Data Systems. Stream Responsibly.</p>
+        <p>&copy; {new Date().getFullYear()} MINAS TESTE SOLUÇÕES. All rights reserved.</p>
       </footer>
     </div>
   );

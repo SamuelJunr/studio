@@ -10,20 +10,19 @@ export default function LandingPage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4">
       <header className="text-center mb-12">
         <div className="inline-block p-4 rounded-xl bg-card shadow-lg mb-6">
-           <Image 
-            src="https://placehold.co/150x150.png" 
-            alt="MINAS TESTE SOLUÇÕES Logo" 
-            width={150} 
-            height={150} 
+           <Image
+            src="/minas.teste.jpg"
+            alt="MINAS TESTE SOLUÇÕES Logo"
+            width={150}
+            height={150}
             className="rounded-md"
-            data-ai-hint="company logo" 
             priority
             />
         </div>
         <h1 className="text-5xl font-bold mb-2 tracking-tight">MINAS TESTE SOLUÇÕES</h1>
         <p className="text-xl text-foreground/80">SOLUÇÕES EM HIDRÁULICA E AUTOMAÇÃO</p>
       </header>
-      
+
       <main className="text-center">
         <Link href="/dashboard" passHref>
           <Button size="lg" className="px-12 py-6 text-lg rounded-xl shadow-md hover:shadow-lg transition-shadow duration-300">
@@ -38,4 +37,3 @@ export default function LandingPage() {
     </div>
   );
 }
-

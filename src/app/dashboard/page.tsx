@@ -2,12 +2,13 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Zap, Thermometer, Sun, Droplets, Volume2, Play, StopCircle, Download, Activity, SlidersHorizontal, Filter as FilterIcon } from 'lucide-react';
+import { Zap, Thermometer, Sun, Droplets, Volume2, Play, StopCircle, Download, Activity, SlidersHorizontal, Filter as FilterIcon, Settings } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import * as storageService from '@/lib/storageService';
 import type { AppSession, TestRun, StoredDataPoint } from '@/lib/types';
@@ -89,12 +90,13 @@ export default function DashboardPage() {
 
   const generateMockData = useCallback(() => {
     if (!selectedFilter) return 0;
+    // Simulate data based on filter, or could be replaced by Arduino data if connected
     switch (selectedFilter.id) {
-      case 'index_One': return parseFloat((Math.random() * 12 + 1).toFixed(2));
-      case 'index_Two': return parseFloat((Math.random() * 30 + 10).toFixed(1));
-      case 'index_Three': return Math.floor(Math.random() * 1000);
-      case 'index_Four': return parseFloat((Math.random() * 60 + 20).toFixed(1));
-      case 'index_Five': return Math.floor(Math.random() * 80 + 30);
+      case 'index_One': return parseFloat((Math.random() * 12 + 1).toFixed(2)); // Example: 1-13%
+      case 'index_Two': return parseFloat((Math.random() * 15 + 13).toFixed(2)); // Example: 13-28%
+      case 'index_Three': return parseFloat((Math.random() * 22 + 28).toFixed(2)); // Example: 28-50%
+      case 'index_Four': return parseFloat((Math.random() * 30 + 50).toFixed(2)); // Example: 50-80%
+      case 'index_Five': return parseFloat((Math.random() * 20 + 80).toFixed(2)); // Example: 80-100%
       default: return parseFloat(Math.random().toFixed(2));
     }
   }, [selectedFilter]);
@@ -191,6 +193,9 @@ export default function DashboardPage() {
         endTime: new Date().toISOString(),
         status: 'stopped',
       });
+      // Optionally, retrieve and display the logged data for the just-stopped test
+      // const stoppedTest = storageService.getTestRunById(currentTestRunId);
+      // if (stoppedTest) setCurrentTestLoggedData(stoppedTest.loggedData);
       setCurrentTestRunId(null);
     }
     toast({
@@ -215,11 +220,12 @@ export default function DashboardPage() {
     }
 
     const csvRows = [];
+    // Header for the CSV file
     csvRows.push("TestRunID,TestFilterName,TestStartTime,TestEndTime,DataTimestamp,DataValue,DataUnit");
 
     completedOrStoppedTestRuns.forEach(testRun => {
       const testFilterOption = filterOptions.find(f => f.id === testRun.filterId);
-      const unit = testFilterOption?.unit || '';
+      const unit = testFilterOption?.unit || ''; // Get unit from filterOptions
       testRun.loggedData.forEach(dataPoint => {
         csvRows.push([
           testRun.id,
@@ -228,7 +234,7 @@ export default function DashboardPage() {
           testRun.endTime ? format(new Date(testRun.endTime), 'yyyy-MM-dd HH:mm:ss') : 'N/A',
           format(new Date(dataPoint.timestamp), 'yyyy-MM-dd HH:mm:ss'),
           dataPoint.value,
-          unit
+          unit // Add unit to each data row
         ].join(","));
       });
     });
@@ -246,7 +252,7 @@ export default function DashboardPage() {
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      URL.revokeObjectURL(url); // Clean up the object URL
       toast({
         title: "CSV Exportado",
         description: `Relatorio ${filename} salvo com sucesso.`,
@@ -263,10 +269,23 @@ export default function DashboardPage() {
   return (
     <div className="container mx-auto p-4 md:p-8 min-h-screen flex flex-col">
       <header className="mb-8 text-center">
-        <h1 className="text-4xl font-bold text-primary flex items-center justify-center">
-          <Activity className="w-10 h-10 mr-3" /> Minas Teste Solução
-        </h1>
-        <p className="text-foreground/80">Monitoramento e Relatorio.</p>
+        <div className="flex justify-between items-center w-full">
+            <div className="flex-1"></div> {/* Spacer */}
+            <div className="flex-1 flex flex-col items-center">
+                 <h1 className="text-4xl font-bold text-primary flex items-center justify-center">
+                    <Activity className="w-10 h-10 mr-3" /> Minas Teste Solução
+                </h1>
+                <p className="text-foreground/80">Monitoramento e Relatorio.</p>
+            </div>
+            <div className="flex-1 flex justify-end">
+                <Link href="/settings" passHref>
+                    <Button variant="outline" size="icon" className="self-start">
+                        <Settings className="w-5 h-5" />
+                        <span className="sr-only">Configurações</span>
+                    </Button>
+                </Link>
+            </div>
+        </div>
       </header>
 
       <Card className="mb-6 shadow-lg bg-card/90 backdrop-blur-sm">

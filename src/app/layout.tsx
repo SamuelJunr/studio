@@ -1,3 +1,4 @@
+
 import type {Metadata} from 'next';
 import { Geist, Geist_Mono } from 'next/font/google'; // Corrected import
 import './globals.css';
@@ -14,8 +15,8 @@ const geistMono = Geist_Mono({ // Corrected variable name
 });
 
 export const metadata: Metadata = {
-  title: 'Arduino Data Streamer', // Updated title
-  description: 'Stream and log data from your Arduino.', // Updated description
+  title: 'MINAS TESTE SOLUÇÕES', // Updated title
+  description: 'Soluções em Hidráulica e Automação.', // Updated description
 };
 
 export default function RootLayout({

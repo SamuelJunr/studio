@@ -11,12 +11,13 @@ export default function LandingPage() {
       <header className="text-center mb-12">
         <div className="inline-block p-4 rounded-xl bg-card shadow-lg mb-6">
            <Image
-            src="/minas.teste.ico" 
+            src="/minas.teste.ico"
             alt="MINAS TESTE SOLUÇÕES Logo"
-            width={150} 
-            height={150} 
+            width={150}
+            height={150}
             className="rounded-md"
             priority
+            data-ai-hint="company logo"
             />
         </div>
         <h1 className="text-5xl font-bold mb-2 tracking-tight">MINAS TESTE SOLUÇÕES</h1>

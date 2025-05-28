@@ -207,7 +207,7 @@ export default function DashboardPage() {
         <CardHeader>
           <CardTitle className="flex items-center text-2xl"><FilterIcon className="w-6 h-6 mr-2 text-accent"/>Controle de Ensaio</CardTitle>
            <CardDescription>
-            {selectedFilter ? `Controls for ${selectedFilter.name} monitoring.` : "Select a filter to enable controls."}
+            {selectedFilter ? `Controle de  ${selectedFilter.name} Monitoramento.` : "Selecione Um Grau de Filtragem para iniciar."}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col sm:flex-row justify-center items-center gap-3">

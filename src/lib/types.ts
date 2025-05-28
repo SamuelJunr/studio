@@ -20,6 +20,15 @@ export interface TestRun {
   filterName: string;
   startTime: string; // ISO string
   endTime: string | null; // ISO string
-  status: 'running' | 'completed' | 'stopped';
+  status: 'running' | 'completed' | 'stopped' | 'aborted'; // Adicionado 'aborted'
   loggedData: StoredDataPoint[];
+  testDurationSeconds?: number; // Duração definida para o teste
+  // initialRemainingSeconds?: number; // Removido, usar testDurationSeconds
+}
+
+// Tipo para dados ao vivo na UI, pode ser diferente de StoredDataPoint
+export interface LiveDataPoint {
+  timestamp: Date;
+  value: number;
+  filterId: string;
 }

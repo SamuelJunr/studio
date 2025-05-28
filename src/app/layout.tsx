@@ -17,6 +17,17 @@ const geistMono = Geist_Mono({ // Corrected variable name
 export const metadata: Metadata = {
   title: 'MINAS TESTE SOLUÇÕES', // Updated title
   description: 'Soluções em Hidráulica e Automação.', // Updated description
+  manifest: '/manifest.json',
+  themeColor: '#da731b',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'MinasTeste',
+    // startupImage: [], // Você pode adicionar imagens de inicialização para dispositivos Apple aqui
+  },
+  icons: {
+    apple: '/icons/icon-192x192.png', // Ícone para dispositivos Apple
+  },
 };
 
 export default function RootLayout({
@@ -25,7 +36,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="pt-BR">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
         <Toaster />

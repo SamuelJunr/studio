@@ -7,8 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
-import { Zap, Thermometer, Sun, Droplets, Volume2, Play, StopCircle, Download, Activity, SlidersHorizontal, Filter as FilterIcon, DropletsIcon } from 'lucide-react';
-import type { Droplet, LucideIcon } from 'lucide-react';
+import { Zap, Thermometer, Sun, Droplets, Volume2, Play, StopCircle, Download, Activity, SlidersHorizontal, Filter as FilterIcon } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import * as storageService from '@/lib/storageService';
+import type { AppSession, TestRun, StoredDataPoint } from '@/lib/types';
 
 interface FilterOption {
   id: string;
@@ -25,7 +27,7 @@ const filterOptions: FilterOption[] = [
   { id: 'index_Five', name: 'Óleo Severamente Contaminado', icon: Droplets, unit: '%' },
 ];
 
-interface DataPoint {
+interface LiveDataPoint { // Renamed from DataPoint to avoid conflict with StoredDataPoint
   timestamp: Date;
   value: number;
   filterId: string;
@@ -36,34 +38,75 @@ const MAX_LIVE_DATA_POINTS = 10;
 export default function DashboardPage() {
   const [selectedFilter, setSelectedFilter] = useState<FilterOption | null>(null);
   const [isTestRunning, setIsTestRunning] = useState<boolean>(false);
-  const [liveData, setLiveData] = useState<DataPoint[]>([]);
-  const [loggedData, setLoggedData] = useState<DataPoint[]>([]);
+  const [liveData, setLiveData] = useState<LiveDataPoint[]>([]);
+  // LoggedData is now primarily managed in localStorage per TestRun.
+  // This state could be used to display current test's logged data if needed.
+  // const [currentTestLoggedData, setCurrentTestLoggedData] = useState<StoredDataPoint[]>([]); 
+  const [currentTestRunId, setCurrentTestRunId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const liveDataIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const loggingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const appSessionIdRef = useRef<string | null>(null);
+
+
+  // App Session Management
+  useEffect(() => {
+    const sessionId = new Date().toISOString();
+    appSessionIdRef.current = sessionId;
+    const newSession: AppSession = {
+      id: sessionId,
+      startTime: sessionId,
+      endTime: null,
+      durationMs: null,
+    };
+    storageService.addAppSession(newSession);
+
+    const handleBeforeUnload = () => {
+      if (appSessionIdRef.current) {
+        const session = storageService.getAppSessionById(appSessionIdRef.current);
+        // Only update if endTime is not already set (to avoid multiple updates on react strict mode double effect)
+        if (session && !session.endTime) {
+            const endTime = new Date();
+            const durationMs = endTime.getTime() - new Date(session.startTime).getTime();
+            storageService.updateAppSession(appSessionIdRef.current, {
+            endTime: endTime.toISOString(),
+            durationMs: durationMs,
+            });
+        }
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      // Call on component unmount as well (e.g., navigation)
+      handleBeforeUnload(); 
+    };
+  }, []);
+
 
   const generateMockData = useCallback(() => {
     if (!selectedFilter) return 0;
-    // Simple mock data generation based on filter type
     switch (selectedFilter.id) {
-      case 'index_One': return parseFloat((Math.random() * 12 + 1).toFixed(2)); // 1-13V
-      case 'index_Two': return parseFloat((Math.random() * 30 + 10).toFixed(1)); // 10-40°C
-      case 'index_Three': return Math.floor(Math.random() * 1000); // 0-1000 lux
-      case 'index_Four': return parseFloat((Math.random() * 60 + 20).toFixed(1)); // 20-80%
-      case 'index_Five': return Math.floor(Math.random() * 80 + 30); // 30-110 dB
+      case 'index_One': return parseFloat((Math.random() * 12 + 1).toFixed(2));
+      case 'index_Two': return parseFloat((Math.random() * 30 + 10).toFixed(1));
+      case 'index_Three': return Math.floor(Math.random() * 1000);
+      case 'index_Four': return parseFloat((Math.random() * 60 + 20).toFixed(1));
+      case 'index_Five': return Math.floor(Math.random() * 80 + 30);
       default: return parseFloat(Math.random().toFixed(2));
     }
   }, [selectedFilter]);
 
-  // Effect for live data stream
+  // Effect for live data stream (UI only)
   useEffect(() => {
     if (isTestRunning && selectedFilter) {
       liveDataIntervalRef.current = setInterval(() => {
         const newValue = generateMockData();
-        const newDataPoint: DataPoint = { timestamp: new Date(), value: newValue, filterId: selectedFilter.id };
-        setLiveData(prevData => [newDataPoint, ...prevData.slice(0, MAX_LIVE_DATA_POINTS - 1)]);
-      }, 1000); // Update live data every 1 second
+        const newLiveDataPoint: LiveDataPoint = { timestamp: new Date(), value: newValue, filterId: selectedFilter.id };
+        setLiveData(prevData => [newLiveDataPoint, ...prevData.slice(0, MAX_LIVE_DATA_POINTS - 1)]);
+      }, 1000);
     } else {
       if (liveDataIntervalRef.current) clearInterval(liveDataIntervalRef.current);
     }
@@ -72,13 +115,17 @@ export default function DashboardPage() {
     };
   }, [isTestRunning, selectedFilter, generateMockData]);
 
-  // Effect for logging data
+  // Effect for logging data to localStorage
   useEffect(() => {
-    if (isTestRunning && selectedFilter) {
+    if (isTestRunning && selectedFilter && currentTestRunId) {
       loggingIntervalRef.current = setInterval(() => {
-        const newValue = generateMockData(); // Potentially generate new or use latest live
-        const newDataPoint: DataPoint = { timestamp: new Date(), value: newValue, filterId: selectedFilter.id };
-        setLoggedData(prevData => [...prevData, newDataPoint]);
+        const newValue = generateMockData();
+        const newStoredDataPoint: StoredDataPoint = {
+          timestamp: new Date().toISOString(),
+          value: newValue,
+          filterId: selectedFilter.id
+        };
+        storageService.addDataPointToTestRun(currentTestRunId, newStoredDataPoint);
       }, 5000); // Log data every 5 seconds
     } else {
       if (loggingIntervalRef.current) clearInterval(loggingIntervalRef.current);
@@ -86,7 +133,7 @@ export default function DashboardPage() {
     return () => {
       if (loggingIntervalRef.current) clearInterval(loggingIntervalRef.current);
     };
-  }, [isTestRunning, selectedFilter, generateMockData]);
+  }, [isTestRunning, selectedFilter, generateMockData, currentTestRunId]);
 
 
   const handleFilterSelect = (filter: FilterOption) => {
@@ -99,8 +146,7 @@ export default function DashboardPage() {
       return;
     }
     setSelectedFilter(filter);
-    setLiveData([]); // Clear live data when filter changes
-    setLoggedData([]); // Clear logged data when filter changes
+    setLiveData([]);
     toast({
       title: "Ensaio Selecionado",
       description: `${filter.name} esta é a filtragem do Ensaio Agora.`,
@@ -116,9 +162,22 @@ export default function DashboardPage() {
       });
       return;
     }
+    
+    const newTestRunId = crypto.randomUUID();
+    const newTestRun: TestRun = {
+      id: newTestRunId,
+      filterId: selectedFilter.id,
+      filterName: selectedFilter.name,
+      startTime: new Date().toISOString(),
+      endTime: null,
+      status: 'running',
+      loggedData: [],
+    };
+    storageService.addTestRun(newTestRun);
+    setCurrentTestRunId(newTestRunId);
+    
     setIsTestRunning(true);
-    setLiveData([]); // Clear previous live data
-    setLoggedData([]); // Clear previous log
+    setLiveData([]); 
     toast({
       title: "Ensaio Iniciado",
       description: `Ensaio para ${selectedFilter.name} Iniciado.`,
@@ -127,6 +186,13 @@ export default function DashboardPage() {
 
   const handleStopTest = () => {
     setIsTestRunning(false);
+    if (currentTestRunId) {
+      storageService.updateTestRun(currentTestRunId, {
+        endTime: new Date().toISOString(),
+        status: 'stopped',
+      });
+      setCurrentTestRunId(null);
+    }
     toast({
       title: "Ensaio Pausado",
       description: "Ensaio Interrompido.",
@@ -134,7 +200,12 @@ export default function DashboardPage() {
   };
 
   const handleDownloadCsv = () => {
-    if (loggedData.length === 0) {
+    const allTestRuns = storageService.getTestRuns();
+    const completedOrStoppedTestRuns = allTestRuns.filter(
+      tr => (tr.status === 'completed' || tr.status === 'stopped') && tr.loggedData.length > 0
+    );
+
+    if (completedOrStoppedTestRuns.length === 0) {
       toast({
         title: "Sem dados",
         description: "Não existem dados coletados para o Relatorio.",
@@ -143,16 +214,32 @@ export default function DashboardPage() {
       return;
     }
 
-    const headers = "Timestamp,Filter,Value,Unit\n";
-    const csvContent = loggedData.map(row => 
-      `${format(row.timestamp, 'yyyy-MM-dd HH:mm:ss')},${filterOptions.find(f => f.id === row.filterId)?.name || row.filterId},${row.value},${filterOptions.find(f => f.id === row.filterId)?.unit || ''}`
-    ).join("\n");
+    const csvRows = [];
+    csvRows.push("TestRunID,TestFilterName,TestStartTime,TestEndTime,DataTimestamp,DataValue,DataUnit");
 
-    const blob = new Blob([headers + csvContent], { type: 'text/csv;charset=utf-8;' });
+    completedOrStoppedTestRuns.forEach(testRun => {
+      const testFilterOption = filterOptions.find(f => f.id === testRun.filterId);
+      const unit = testFilterOption?.unit || '';
+      testRun.loggedData.forEach(dataPoint => {
+        csvRows.push([
+          testRun.id,
+          testRun.filterName,
+          format(new Date(testRun.startTime), 'yyyy-MM-dd HH:mm:ss'),
+          testRun.endTime ? format(new Date(testRun.endTime), 'yyyy-MM-dd HH:mm:ss') : 'N/A',
+          format(new Date(dataPoint.timestamp), 'yyyy-MM-dd HH:mm:ss'),
+          dataPoint.value,
+          unit
+        ].join(","));
+      });
+    });
+    
+    const csvContent = csvRows.join("\n");
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
+
     if (link.download !== undefined) {
       const url = URL.createObjectURL(blob);
-      const filename = `arduino_data_${selectedFilter?.name || 'log'}_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`;
+      const filename = `minas_teste_relatorio_${format(new Date(), 'yyyyMMdd_HHmmss')}.csv`;
       link.setAttribute("href", url);
       link.setAttribute("download", filename);
       link.style.visibility = 'hidden';
@@ -161,13 +248,13 @@ export default function DashboardPage() {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       toast({
-        title: "CSV Exported",
-        description: `Report ${filename} saved successfully.`,
+        title: "CSV Exportado",
+        description: `Relatorio ${filename} salvo com sucesso.`,
       });
     } else {
        toast({
-        title: "Export Failed",
-        description: "CSV export is not supported by your browser.",
+        title: "Falha na Exportação",
+        description: "Exportação CSV não suportada pelo seu Navegador.",
         variant: "destructive",
       });
     }
@@ -207,7 +294,7 @@ export default function DashboardPage() {
         <CardHeader>
           <CardTitle className="flex items-center text-2xl"><FilterIcon className="w-6 h-6 mr-2 text-accent"/>Controle de Ensaio</CardTitle>
            <CardDescription>
-            {selectedFilter ? `Controle de  ${selectedFilter.name} Monitoramento.` : "Selecione Um Grau de Filtragem para iniciar."}
+            {selectedFilter ? `Controle de ${selectedFilter.name} Monitoramento.` : "Selecione Um Grau de Filtragem para iniciar."}
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col sm:flex-row justify-center items-center gap-3">
@@ -232,7 +319,7 @@ export default function DashboardPage() {
           </Button>
           <Button
             onClick={handleDownloadCsv}
-            disabled={loggedData.length === 0 && !isTestRunning}
+            disabled={storageService.getTestRuns().filter(tr => (tr.status === 'completed' || tr.status === 'stopped') && tr.loggedData.length > 0).length === 0}
             size="lg"
             variant="outline"
             className="w-full sm:w-auto border-accent text-accent-foreground hover:bg-accent/20 disabled:opacity-50 disabled:border-muted disabled:text-muted-foreground"
@@ -247,11 +334,11 @@ export default function DashboardPage() {
         <CardHeader>
           <CardTitle className="flex items-center text-2xl">
             <Activity className="w-6 h-6 mr-2 text-accent" />
-            Ensaio {isTestRunning ? 'Em Progresso' : 'Finalizado'}
+            Dados Ao Vivo {isTestRunning ? 'Em Progresso' : ''}
             {selectedFilter ? `(${selectedFilter.name})` : ''}
           </CardTitle>
           <CardDescription>
-            {isTestRunning ? `Exibindo as últimas leituras para ${selectedFilter?.name}. Atualizações a cada  5 segundos.` : "Inicie um Ensaio para ver os Dados."}
+            {isTestRunning ? `Exibindo as últimas leituras para ${selectedFilter?.name}. Atualizações a cada 1 segundo.` : "Inicie um Ensaio para ver os Dados."}
             {!selectedFilter && !isTestRunning && " Selecione um Ensaio"}
           </CardDescription>
         </CardHeader>
@@ -279,7 +366,7 @@ export default function DashboardPage() {
             </div>
           ) : (
             <p className="text-center text-foreground/70 py-8">
-              {isTestRunning ? "Aguardando Dados..." : "Nenhum dado para exibir. Inicie um ensaio para ver as leituras."}
+              {isTestRunning ? "Aguardando Dados..." : "Nenhum dado ao vivo para exibir. Inicie um ensaio."}
             </p>
           )}
         </CardContent>
@@ -290,4 +377,3 @@ export default function DashboardPage() {
     </div>
   );
 }
-
